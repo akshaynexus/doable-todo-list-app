@@ -611,21 +611,7 @@ class _MessageBubble extends StatelessWidget {
                 if (message.isStreaming &&
                     message.content.isEmpty &&
                     (message.toolCalls == null || message.toolCalls!.isEmpty))
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const _StreamingDots(),
-                  ),
+                  _AIThinkingBubble(isDark: isDark),
               ],
             ),
           ),
@@ -773,6 +759,183 @@ class _StreamingDotsState extends State<_StreamingDots> with TickerProviderState
           },
         );
       }),
+    );
+  }
+}
+
+class _AIThinkingBubble extends StatelessWidget {
+  final bool isDark;
+  
+  const _AIThinkingBubble({required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          _SkeletonShimmerLoader(
+            height: 16,
+            width: 120,
+          ),
+          SizedBox(height: 8),
+          _SkeletonShimmerLoader(
+            height: 16,
+            width: 200,
+          ),
+          SizedBox(height: 8),
+          _SkeletonShimmerLoader(
+            height: 16,
+            width: 80,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkeletonShimmerLoader extends StatefulWidget {
+  final double height;
+  final double? width;
+  
+  const _SkeletonShimmerLoader({
+    required this.height,
+    this.width,
+  });
+
+  @override
+  State<_SkeletonShimmerLoader> createState() => _SkeletonShimmerLoaderState();
+}
+
+class _SkeletonShimmerLoaderState extends State<_SkeletonShimmerLoader> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    );
+    _animation = Tween<double>(begin: -1.0, end: 2.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? Colors.grey.shade800 : const Color(0xFFE8E8E8);
+    final highlightColor = isDark ? Colors.grey.shade700 : Colors.white;
+
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          height: widget.height,
+          width: widget.width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            gradient: LinearGradient(
+              begin: Alignment(-1.0 + _animation.value, 0),
+              end: Alignment(_animation.value, 0),
+              colors: [
+                baseColor,
+                highlightColor,
+                baseColor,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PulsatingDot extends StatefulWidget {
+  final double size;
+  final Color? color;
+  
+  const _PulsatingDot({
+    this.size = 48,
+    this.color,
+  });
+
+  @override
+  State<_PulsatingDot> createState() => _PulsatingDotState();
+}
+
+class _PulsatingDotState extends State<_PulsatingDot> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dotColor = widget.color ?? (isDark ? Colors.white : Colors.black);
+    
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            width: widget.size,
+            height: widget.size,
+            decoration: BoxDecoration(
+              color: dotColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: dotColor.withValues(alpha: 0.3),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
