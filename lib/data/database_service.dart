@@ -1,11 +1,20 @@
 import 'package:path/path.dart' as p;
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'dart:io';
 
 class DatabaseService {
   static const _dbName = 'doable.db';
   static const _dbVersion = 1;
 
   static Database? _db;
+
+  static Future<void> initialize() async {
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      // Use FFI for desktop platforms
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfi;
+    }
+  }
 
   static Future<Database> instance() async {
     if (_db != null) return _db!;

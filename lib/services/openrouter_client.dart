@@ -53,12 +53,15 @@ INSTRUCTIONS:
 
   static Future<List<OpenRouterModel>> fetchModels() async {
     final apiKey = await getApiKey();
+    print('Fetch models - API key: ${apiKey?.substring(0, 10)}...');
     if (apiKey == null || apiKey.isEmpty) {
+      print('No API key');
       return [];
     }
 
     try {
       final client = http.Client();
+      print('Making request to $_modelsUrl');
       final response = await client.get(
         Uri.parse(_modelsUrl),
         headers: {
@@ -68,14 +71,22 @@ INSTRUCTIONS:
         },
       ).timeout(const Duration(seconds: 15));
 
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body.substring(0, 500)}');
+
       if (response.statusCode != 200) {
+        print('Error: ${response.statusCode}');
         return [];
       }
 
       final json = jsonDecode(response.body);
       final data = json['data'] as List?;
-      if (data == null) return [];
+      if (data == null) {
+        print('No data field');
+        return [];
+      }
 
+      print('Found ${data.length} models');
       return data.map((m) => OpenRouterModel.fromJson(m)).toList()
         ..sort((a, b) {
           final aTop = a.top ? 0 : 1;
@@ -84,6 +95,7 @@ INSTRUCTIONS:
           return a.name.compareTo(b.name);
         });
     } catch (e) {
+      print('Exception: $e');
       return [];
     }
   }
@@ -251,6 +263,8 @@ class OpenRouterModel {
   final bool top;
   final int? contextLength;
   final String? pricing;
+  final String? architecture;
+  final String? creator;
 
   OpenRouterModel({
     required this.id,
@@ -259,35 +273,115 @@ class OpenRouterModel {
     this.top = false,
     this.contextLength,
     this.pricing,
+    this.architecture,
+    this.creator,
   });
 
+  String get provider {
+    final lowerId = id.toLowerCase();
+    if (lowerId.contains('google') || lowerId.contains('gemini') || lowerId.contains('gemma')) {
+      return 'Google';
+    } else if (lowerId.contains('anthropic') || lowerId.contains('claude')) {
+      return 'Anthropic';
+    } else if (lowerId.contains('openai') || lowerId.contains('gpt')) {
+      return 'OpenAI';
+    } else if (lowerId.contains('qwen')) {
+      return 'Qwen';
+    } else if (lowerId.contains('deepseek')) {
+      return 'DeepSeek';
+    } else if (lowerId.contains('meta') || lowerId.contains('llama')) {
+      return 'Meta';
+    } else if (lowerId.contains('mistral')) {
+      return 'Mistral';
+    } else if (lowerId.contains('nvidia') || lowerId.contains('nemotron')) {
+      return 'NVIDIA';
+    } else if (lowerId.contains('xai') || lowerId.contains('grok')) {
+      return 'xAI';
+    } else if (lowerId.contains('perplexity')) {
+      return 'Perplexity';
+    } else if (lowerId.contains('amazon') || lowerId.contains('claude') == false && lowerId.contains('nova')) {
+      return 'Amazon';
+    }
+    return 'Other';
+  }
+
+  bool get isFree {
+    if (pricing == null) return false;
+    return pricing!.toLowerCase().contains('free') || pricing == '\$0';
+  }
+
+  bool get isPaid {
+    return !isFree;
+  }
+
   factory OpenRouterModel.fromJson(Map<String, dynamic> json) {
+    final id = json['id'] as String? ?? '';
+    final lowerId = id.toLowerCase();
+    
+    String? creator;
+    if (lowerId.contains('google') || lowerId.contains('gemini') || lowerId.contains('gemma')) {
+      creator = 'Google';
+    } else if (lowerId.contains('anthropic') || lowerId.contains('claude')) {
+      creator = 'Anthropic';
+    } else if (lowerId.contains('openai') || lowerId.contains('gpt')) {
+      creator = 'OpenAI';
+    } else if (lowerId.contains('qwen')) {
+      creator = 'Qwen';
+    } else if (lowerId.contains('deepseek')) {
+      creator = 'DeepSeek';
+    } else if (lowerId.contains('meta') || lowerId.contains('llama')) {
+      creator = 'Meta';
+    } else if (lowerId.contains('mistral')) {
+      creator = 'Mistral';
+    } else if (lowerId.contains('nvidia') || lowerId.contains('nemotron')) {
+      creator = 'NVIDIA';
+    } else if (lowerId.contains('xai') || lowerId.contains('grok')) {
+      creator = 'xAI';
+    } else if (lowerId.contains('perplexity')) {
+      creator = 'Perplexity';
+    } else if (lowerId.contains('amazon') || lowerId.contains('nova')) {
+      creator = 'Amazon';
+    }
+
     return OpenRouterModel(
-      id: json['id'] as String? ?? '',
-      name: json['name'] as String? ?? json['id'] as String? ?? 'Unknown',
+      id: id,
+      name: json['name'] as String? ?? id,
       description: json['description'] as String?,
       top: json['top'] as bool? ?? false,
       contextLength: json['context_length'] as int?,
       pricing: json['pricing'] != null 
           ? _formatPricing(json['pricing'] as Map<String, dynamic>)
           : null,
+      architecture: json['architecture'] as String?,
+      creator: creator,
     );
   }
 
   static String? _formatPricing(Map<String, dynamic>? pricing) {
     if (pricing == null) return null;
-    final prompt = pricing['prompt'] as num?;
-    final completion = pricing['completion'] as num?;
-    if (prompt == null && completion == null) return null;
+    
+    final prompt = _parseNumeric(pricing['prompt']);
+    final completion = _parseNumeric(pricing['completion']);
+    final image = _parseNumeric(pricing['image']);
+    
+    if (prompt == null && completion == null && image == null) return null;
     
     final parts = <String>[];
-    if (prompt != null) {
-      parts.add('\$${(prompt * 1000000).toStringAsFixed(2)}/M prompt');
+    if (prompt != null && prompt > 0) {
+      parts.add('\$${(prompt * 1000000).toStringAsFixed(2)}/M');
     }
-    if (completion != null) {
-      parts.add('\$${(completion * 1000000).toStringAsFixed(2)}/M completion');
+    if (completion != null && completion > 0) {
+      parts.add('\$${(completion * 1000000).toStringAsFixed(2)}/M');
     }
-    return parts.join(', ');
+    if (parts.isEmpty) return 'Free';
+    return parts.join(' + ');
+  }
+
+  static double? _parseNumeric(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
   }
 
   String get displayName {

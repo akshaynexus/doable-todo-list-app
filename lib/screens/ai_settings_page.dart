@@ -9,7 +9,7 @@ class AISettingsPage extends StatefulWidget {
   State<AISettingsPage> createState() => _AISettingsPageState();
 }
 
-class _AISettingsPageState extends State<AISettingsPage> {
+class _AISettingsPageState extends State<AISettingsPage> with WidgetsBindingObserver {
   String? _apiKey;
   String? _currentModel;
   List<OpenRouterModel> _models = [];
@@ -20,7 +20,27 @@ class _AISettingsPageState extends State<AISettingsPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _apiKeyController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _loadModel();
+    }
+  }
+
+  Future<void> _loadModel() async {
+    final model = await OpenRouterClient.getModel();
+    setState(() => _currentModel = model);
   }
 
   Future<void> _loadData() async {
@@ -121,141 +141,7 @@ class _AISettingsPageState extends State<AISettingsPage> {
       return;
     }
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark 
-          ? const Color(0xFF1A1A1A) 
-          : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (_, scrollController) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade400,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        'Select Model',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: Theme.of(context).brightness == Brightness.dark 
-                              ? Colors.white 
-                              : Colors.black,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (_loadingModels)
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: const Icon(Icons.refresh),
-                        onPressed: _loadingModels ? null : _loadModels,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: _models.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_loadingModels)
-                            const CircularProgressIndicator()
-                          else ...[
-                            const Icon(Icons.cloud_off, size: 48, color: Colors.grey),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No models available',
-                              style: TextStyle(
-                                color: Theme.of(context).brightness == Brightness.dark 
-                                    ? Colors.grey.shade400 
-                                    : Colors.grey.shade600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextButton(
-                              onPressed: _loadModels,
-                              child: const Text('Tap to retry'),
-                            ),
-                          ],
-                        ],
-                      ),
-                    )
-                  : ListView.builder(
-                      controller: scrollController,
-                      itemCount: _models.length,
-                      itemBuilder: (_, i) {
-                        final model = _models[i];
-                        final isSelected = model.id == _currentModel;
-                        return ListTile(
-                          leading: Icon(
-                            isSelected ? Icons.check_circle : Icons.circle_outlined,
-                            color: isSelected 
-                                ? Theme.of(context).colorScheme.primary 
-                                : Colors.grey,
-                          ),
-                          title: Text(
-                            model.name,
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                              color: Theme.of(context).brightness == Brightness.dark 
-                                  ? Colors.white 
-                                  : Colors.black,
-                            ),
-                          ),
-                          subtitle: model.pricing != null
-                              ? Text(
-                                  model.pricing!,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Theme.of(context).brightness == Brightness.dark 
-                                        ? Colors.grey.shade400 
-                                        : Colors.grey.shade600,
-                                  ),
-                                )
-                              : null,
-                          onTap: () => _selectModel(model),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _apiKeyController.dispose();
-    super.dispose();
+    Navigator.pushNamed(context, 'model_picker');
   }
 
   @override

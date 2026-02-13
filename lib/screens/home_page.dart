@@ -33,7 +33,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   // ---- Data from SQLite rendered by the UI ----
   final List<Task> _tasks = [];
 
@@ -93,7 +93,21 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _init(); // initial DB load
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _load();
+    }
   }
 
   Future<void> _init() async {
@@ -457,7 +471,12 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           final saved = await Navigator.pushNamed(context, 'add_task');
-          if (saved == true) await _load();
+          print('Returned from add_task: $saved');
+          if (saved == true) {
+            print('Reloading tasks...');
+            await _load();
+            print('Tasks reloaded, count: ${_tasks.length}');
+          }
         },
         backgroundColor: isDark ? colorScheme.primary : Colors.black,
         shape: const CircleBorder(),
