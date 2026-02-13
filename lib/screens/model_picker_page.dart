@@ -4,7 +4,7 @@ import 'package:doable_todo_list_app/services/openrouter_client.dart';
 class ModelPickerPage extends StatefulWidget {
   final bool toolCallingOnly;
   
-  const ModelPickerPage({super.key, this.toolCallingOnly = false});
+  const ModelPickerPage({super.key, this.toolCallingOnly = true});
 
   @override
   State<ModelPickerPage> createState() => _ModelPickerPageState();
@@ -374,26 +374,12 @@ class _ModelPickerPageState extends State<ModelPickerPage> {
                 if (widget.toolCallingOnly) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: Colors.purple.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.build, size: 12, color: Colors.purple),
-                        SizedBox(width: 4),
-                        Text(
-                          'Tool Calling',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.purple,
-                          ),
-                        ),
-                      ],
-                    ),
+                    child: const Icon(Icons.build, size: 12, color: Colors.purple),
                   ),
                 ],
                 if (_selectedProviders.isNotEmpty || _priceFilter != 'all' || _searchQuery.isNotEmpty) ...[
@@ -760,27 +746,10 @@ class _ModelCard extends StatelessWidget {
                         ],
                         if (model.supportsToolCalls) ...[
                           const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.purple.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.build, size: 10, color: Colors.purple),
-                                SizedBox(width: 2),
-                                Text(
-                                  'Tools',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.purple,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          Icon(
+                            Icons.build,
+                            size: 14,
+                            color: Colors.purple,
                           ),
                         ],
                       ],
