@@ -12,6 +12,7 @@ class _ModelPickerPageState extends State<ModelPickerPage> {
   List<OpenRouterModel> _allModels = [];
   List<OpenRouterModel> _filteredModels = [];
   bool _loading = true;
+  String? _error;
   String? _currentModel;
   String _searchQuery = '';
   
@@ -51,10 +52,11 @@ class _ModelPickerPageState extends State<ModelPickerPage> {
   }
 
   Future<void> _loadModels() async {
-    setState(() => _loading = true);
-    final models = await OpenRouterClient.fetchModels();
+    setState(() { _loading = true; _error = null; });
+    final result = await OpenRouterClient.fetchModels();
     setState(() {
-      _allModels = models;
+      _allModels = result.models;
+      _error = result.error;
       _applyFilters();
       _loading = false;
     });
@@ -92,6 +94,20 @@ class _ModelPickerPageState extends State<ModelPickerPage> {
       result.sort((a, b) => a.name.compareTo(b.name));
     } else if (_sortBy == 'context') {
       result.sort((a, b) => (b.contextLength ?? 0).compareTo(a.contextLength ?? 0));
+    } else if (_sortBy == 'provider') {
+      result.sort((a, b) => a.provider.compareTo(b.provider));
+    } else if (_sortBy == 'price_asc') {
+      result.sort((a, b) {
+        final aPrice = a.pricingNumeric ?? double.infinity;
+        final bPrice = b.pricingNumeric ?? double.infinity;
+        return aPrice.compareTo(bPrice);
+      });
+    } else if (_sortBy == 'price_desc') {
+      result.sort((a, b) {
+        final aPrice = a.pricingNumeric ?? -1;
+        final bPrice = b.pricingNumeric ?? -1;
+        return bPrice.compareTo(aPrice);
+      });
     }
 
     setState(() => _filteredModels = result);
@@ -229,6 +245,61 @@ class _ModelPickerPageState extends State<ModelPickerPage> {
                         onTap: () => setState(() { _sortBy = 'context'; _applyFilters(); }),
                         isDark: isDark,
                       ),
+                      const SizedBox(width: 8),
+                      _SortChip(
+                        label: 'Provider',
+                        icon: Icons.business,
+                        selected: _sortBy == 'provider',
+                        onTap: () => setState(() { _sortBy = 'provider'; _applyFilters(); }),
+                        isDark: isDark,
+                      ),
+                      const SizedBox(width: 8),
+                      PopupMenuButton<String>(
+                        onSelected: (value) => setState(() { _sortBy = value; _applyFilters(); }),
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(value: 'price_asc', child: Text('Price: Low to High')),
+                          const PopupMenuItem(value: 'price_desc', child: Text('Price: High to Low')),
+                        ],
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: _sortBy == 'price_asc' || _sortBy == 'price_desc'
+                                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.attach_money, 
+                                size: 14, 
+                                color: _sortBy == 'price_asc' || _sortBy == 'price_desc'
+                                    ? Theme.of(context).colorScheme.primary 
+                                    : (isDark ? Colors.grey.shade400 : Colors.grey.shade600)
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Price',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: _sortBy == 'price_asc' || _sortBy == 'price_desc' ? FontWeight.w600 : FontWeight.w500,
+                                  color: _sortBy == 'price_asc' || _sortBy == 'price_desc'
+                                      ? Theme.of(context).colorScheme.primary 
+                                      : (isDark ? Colors.grey.shade400 : Colors.grey.shade600)
+                                ),
+                              ),
+                              Icon(
+                                Icons.arrow_drop_down,
+                                size: 14,
+                                color: _sortBy == 'price_asc' || _sortBy == 'price_desc'
+                                    ? Theme.of(context).colorScheme.primary 
+                                    : (isDark ? Colors.grey.shade400 : Colors.grey.shade600),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -340,6 +411,43 @@ class _ModelPickerPageState extends State<ModelPickerPage> {
   }
 
   Widget _buildEmptyState(bool isDark) {
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'Error loading models',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: _loadModels,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Try again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,

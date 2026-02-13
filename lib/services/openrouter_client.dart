@@ -51,12 +51,12 @@ INSTRUCTIONS:
     await prefs.setString('openrouter_model', model);
   }
 
-  static Future<List<OpenRouterModel>> fetchModels() async {
+  static Future<({List<OpenRouterModel> models, String? error})> fetchModels() async {
     final apiKey = await getApiKey();
     print('Fetch models - API key: ${apiKey?.substring(0, 10)}...');
     if (apiKey == null || apiKey.isEmpty) {
       print('No API key');
-      return [];
+      return (models: <OpenRouterModel>[], error: 'API key not set');
     }
 
     try {
@@ -76,27 +76,35 @@ INSTRUCTIONS:
 
       if (response.statusCode != 200) {
         print('Error: ${response.statusCode}');
-        return [];
+        String errorMsg = 'Failed to fetch models (${response.statusCode})';
+        try {
+          final errorJson = jsonDecode(response.body);
+          if (errorJson['error'] != null) {
+            errorMsg = errorJson['error']['message'] ?? errorMsg;
+          }
+        } catch (_) {}
+        return (models: <OpenRouterModel>[], error: errorMsg);
       }
 
       final json = jsonDecode(response.body);
       final data = json['data'] as List?;
       if (data == null) {
         print('No data field');
-        return [];
+        return (models: <OpenRouterModel>[], error: 'Invalid response format');
       }
 
       print('Found ${data.length} models');
-      return data.map((m) => OpenRouterModel.fromJson(m)).toList()
+      final models = data.map((m) => OpenRouterModel.fromJson(m)).toList()
         ..sort((a, b) {
           final aTop = a.top ? 0 : 1;
           final bTop = b.top ? 0 : 1;
           if (aTop != bTop) return aTop.compareTo(bTop);
           return a.name.compareTo(b.name);
         });
+      return (models: models, error: null);
     } catch (e) {
       print('Exception: $e');
-      return [];
+      return (models: <OpenRouterModel>[], error: e.toString());
     }
   }
 
@@ -263,6 +271,7 @@ class OpenRouterModel {
   final bool top;
   final int? contextLength;
   final String? pricing;
+  final double? pricingNumeric;
   final String? architecture;
   final String? creator;
 
@@ -273,6 +282,7 @@ class OpenRouterModel {
     this.top = false,
     this.contextLength,
     this.pricing,
+    this.pricingNumeric,
     this.architecture,
     this.creator,
   });
@@ -315,7 +325,7 @@ class OpenRouterModel {
   }
 
   factory OpenRouterModel.fromJson(Map<String, dynamic> json) {
-    final id = json['id'] as String? ?? '';
+    final id = json['id']?.toString() ?? '';
     final lowerId = id.toLowerCase();
     
     String? creator;
@@ -343,22 +353,26 @@ class OpenRouterModel {
       creator = 'Amazon';
     }
 
+    final pricingData = json['pricing'];
+    final pricingMap = pricingData is Map ? Map<String, dynamic>.from(pricingData as Map) : null;
+    final pricingStr = pricingMap != null ? _formatPricing(pricingMap) : null;
+    final pricingNum = pricingMap != null ? _parsePricingNumeric(pricingMap) : null;
+
     return OpenRouterModel(
       id: id,
-      name: json['name'] as String? ?? id,
-      description: json['description'] as String?,
-      top: json['top'] as bool? ?? false,
-      contextLength: json['context_length'] as int?,
-      pricing: json['pricing'] != null 
-          ? _formatPricing(json['pricing'] as Map<String, dynamic>)
-          : null,
-      architecture: json['architecture'] as String?,
+      name: json['name']?.toString() ?? id,
+      description: json['description']?.toString(),
+      top: json['top'] == true,
+      contextLength: json['context_length'] is int ? json['context_length'] as int : int.tryParse(json['context_length']?.toString() ?? ''),
+      pricing: pricingStr,
+      pricingNumeric: pricingNum,
+      architecture: json['architecture']?.toString(),
       creator: creator,
     );
   }
 
   static String? _formatPricing(Map<String, dynamic>? pricing) {
-    if (pricing == null) return null;
+    if (pricing == null || pricing.isEmpty) return null;
     
     final prompt = _parseNumeric(pricing['prompt']);
     final completion = _parseNumeric(pricing['completion']);
@@ -382,6 +396,13 @@ class OpenRouterModel {
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value);
     return null;
+  }
+
+  static double? _parsePricingNumeric(Map<String, dynamic> pricing) {
+    final prompt = _parseNumeric(pricing['prompt']);
+    final completion = _parseNumeric(pricing['completion']);
+    if (prompt == null && completion == null) return null;
+    return (prompt ?? 0) + (completion ?? 0);
   }
 
   String get displayName {

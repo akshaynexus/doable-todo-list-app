@@ -7,16 +7,19 @@ class DatabaseService {
   static const _dbVersion = 1;
 
   static Database? _db;
+  static bool _initialized = false;
 
-  static Future<void> initialize() async {
+  static Future<void> _ensureInitialized() async {
+    if (_initialized) return;
+    _initialized = true;
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-      // Use FFI for desktop platforms
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
   }
 
   static Future<Database> instance() async {
+    await _ensureInitialized();
     if (_db != null) return _db!;
     final base = await getDatabasesPath();
     final path = p.join(base, _dbName);
@@ -40,7 +43,6 @@ class DatabaseService {
         ''');
       },
       onUpgrade: (db, oldV, newV) async {
-        // Future migrations go here (use db.execute, db.batch).
       },
     );
     return _db!;

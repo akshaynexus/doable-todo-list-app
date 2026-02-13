@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:doable_todo_list_app/services/openrouter_client.dart';
+import 'package:doable_todo_list_app/screens/model_picker_page.dart';
 
 class AISettingsPage extends StatefulWidget {
   const AISettingsPage({super.key});
@@ -59,9 +60,9 @@ class _AISettingsPageState extends State<AISettingsPage> with WidgetsBindingObse
 
   Future<void> _loadModels() async {
     setState(() => _loadingModels = true);
-    final models = await OpenRouterClient.fetchModels();
+    final result = await OpenRouterClient.fetchModels();
     setState(() {
-      _models = models;
+      _models = result.models;
       _loadingModels = false;
     });
   }
@@ -133,7 +134,7 @@ class _AISettingsPageState extends State<AISettingsPage> with WidgetsBindingObse
     );
   }
 
-  void _showModelPicker() {
+  void _showModelPicker() async {
     if (_apiKey == null || _apiKey!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please set an API key first')),
@@ -141,7 +142,13 @@ class _AISettingsPageState extends State<AISettingsPage> with WidgetsBindingObse
       return;
     }
 
-    Navigator.pushNamed(context, 'model_picker');
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ModelPickerPage()),
+    );
+    if (result != null && result is OpenRouterModel) {
+      setState(() => _currentModel = result.id);
+    }
   }
 
   @override

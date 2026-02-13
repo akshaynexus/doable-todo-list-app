@@ -1,8 +1,6 @@
 import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:doable_todo_list_app/services/notification_service.dart';
-import 'package:doable_todo_list_app/repositories/task_repository.dart';
-import 'package:doable_todo_list_app/data/database_service.dart';
 import 'package:doable_todo_list_app/screens/add_task_page.dart';
 import 'package:doable_todo_list_app/screens/chat_page.dart';
 import 'package:doable_todo_list_app/screens/ai_settings_page.dart';
@@ -17,9 +15,6 @@ const Color _seedColor = Color(0xFF3B82F6);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize database - use FFI for desktop, default for mobile
-  await DatabaseService.initialize();
 
   await AwesomeNotifications().initialize(
     null,
@@ -38,12 +33,7 @@ Future<void> main() async {
     ],
   );
 
-  await NotificationService.requestPermissions();
-
-  try {
-    final tasks = await TaskRepository().fetchAll();
-    await NotificationService.rescheduleAllNotifications(tasks);
-  } catch (_) {}
+  NotificationService.requestPermissions();
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
