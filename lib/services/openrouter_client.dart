@@ -17,13 +17,15 @@ You have access to the following tools:
 
 $toolDefs
 
-INSTRUCTIONS:
-1. Use tools proactively - don't just describe what you'll do, actually call the tools
-2. When adding tasks, extract title, time, and date from the user's message
-3. Time format: "11:30 AM" or "5:00 PM"  
-4. Date format: "26/11/24" (DD/MM/YY)
-5. After tool calls, summarize what happened in a friendly, brief way
-6. Keep responses short and actionable''';
+IMPORTANT - TASK ADDING RULES:
+1. When adding tasks, you MUST ask for clarification if the user doesn't provide BOTH time AND date
+2. If the user says "remind me to buy milk" - respond with "What time should I remind you?" or "What date?" 
+3. Only call add_task when you have ALL of: title, time (e.g., "11:30 AM"), AND date (e.g., "26/11/24")
+4. Ask follow-up questions like: "What time?" or "What date?" to get missing info
+5. Time format: "11:30 AM" or "5:00 PM"  
+6. Date format: "26/11/24" (DD/MM/YY)
+7. After successfully adding a task, summarize what happened
+8. Keep responses short and actionable''';
   }
 
   static Future<String?> getApiKey() async {
@@ -274,6 +276,7 @@ class OpenRouterModel {
   final double? pricingNumeric;
   final String? architecture;
   final String? creator;
+  final bool supportsToolCalls;
 
   OpenRouterModel({
     required this.id,
@@ -285,6 +288,7 @@ class OpenRouterModel {
     this.pricingNumeric,
     this.architecture,
     this.creator,
+    this.supportsToolCalls = false,
   });
 
   String get provider {
@@ -358,6 +362,12 @@ class OpenRouterModel {
     final pricingStr = pricingMap != null ? _formatPricing(pricingMap) : null;
     final pricingNum = pricingMap != null ? _parsePricingNumeric(pricingMap) : null;
 
+    bool supportsToolCalls = false;
+    final supportedParams = json['supported_parameters'];
+    if (supportedParams is List) {
+      supportsToolCalls = supportedParams.any((p) => p.toString().toLowerCase() == 'tools');
+    }
+
     return OpenRouterModel(
       id: id,
       name: json['name']?.toString() ?? id,
@@ -368,6 +378,7 @@ class OpenRouterModel {
       pricingNumeric: pricingNum,
       architecture: json['architecture']?.toString(),
       creator: creator,
+      supportsToolCalls: supportsToolCalls,
     );
   }
 

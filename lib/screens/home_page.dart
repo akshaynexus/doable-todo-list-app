@@ -406,7 +406,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
                         iconSize: 24,
                         splashRadius: 24,
                         tooltip: 'AI Assistant',
-                        onPressed: () => Navigator.pushNamed(context, 'chat'),
+                        onPressed: () async {
+                          final result = await Navigator.pushNamed(context, 'chat');
+                          if (result == true) {
+                            _load();
+                          }
+                        },
                         icon: Icon(Icons.smart_toy_outlined, color: isDark ? Colors.white70 : Colors.black87),
                       ),
                       ConstrainedBox(

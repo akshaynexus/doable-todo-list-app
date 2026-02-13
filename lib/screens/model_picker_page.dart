@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:doable_todo_list_app/services/openrouter_client.dart';
 
 class ModelPickerPage extends StatefulWidget {
-  const ModelPickerPage({super.key});
+  final bool toolCallingOnly;
+  
+  const ModelPickerPage({super.key, this.toolCallingOnly = false});
 
   @override
   State<ModelPickerPage> createState() => _ModelPickerPageState();
@@ -64,6 +66,10 @@ class _ModelPickerPageState extends State<ModelPickerPage> {
 
   void _applyFilters() {
     List<OpenRouterModel> result = List.from(_allModels);
+
+    if (widget.toolCallingOnly) {
+      result = result.where((m) => m.supportsToolCalls).toList();
+    }
 
     if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
@@ -365,6 +371,31 @@ class _ModelPickerPageState extends State<ModelPickerPage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (widget.toolCallingOnly) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.build, size: 12, color: Colors.purple),
+                        SizedBox(width: 4),
+                        Text(
+                          'Tool Calling',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.purple,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 if (_selectedProviders.isNotEmpty || _priceFilter != 'all' || _searchQuery.isNotEmpty) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
@@ -724,6 +755,31 @@ class _ModelCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               color: isDark ? Colors.grey.shade500 : Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                        if (model.supportsToolCalls) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.build, size: 10, color: Colors.purple),
+                                SizedBox(width: 2),
+                                Text(
+                                  'Tools',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.purple,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],

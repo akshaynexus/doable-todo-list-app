@@ -21,6 +21,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
   bool _hasApiKey = false;
   int _toolCallIdCounter = 0;
   String? _currentAssistantId;
+  bool _tasksModified = false;
 
   @override
   void initState() {
@@ -161,6 +162,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                 if (lastIdx >= 0) {
                   final result = event.toolResult;
                   final success = result?['success'] == true;
+                  final toolName = event.toolName?.toLowerCase() ?? '';
+                  if (success && (toolName == 'add_task' || toolName == 'update_task' || toolName == 'delete_task' || toolName == 'toggle_task' || toolName == 'clear_all_tasks')) {
+                    _tasksModified = true;
+                  }
                   toolCalls[lastIdx] = toolCalls[lastIdx].copyWith(
                     status: success ? ToolCallStatus.completed : ToolCallStatus.error,
                     result: result,
@@ -241,7 +246,13 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
         surfaceTintColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (_tasksModified) {
+              Navigator.pop(context, true);
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
         title: Text(
           'AI Assistant',
