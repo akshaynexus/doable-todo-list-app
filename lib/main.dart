@@ -1,35 +1,34 @@
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:doable_todo_list_app/services/notification_service.dart';
 import 'package:doable_todo_list_app/repositories/task_repository.dart';
 import 'package:doable_todo_list_app/screens/add_task_page.dart';
+import 'package:doable_todo_list_app/screens/chat_page.dart';
+import 'package:doable_todo_list_app/screens/ai_settings_page.dart';
 import 'package:doable_todo_list_app/screens/edit_task_page.dart';
 import 'package:doable_todo_list_app/screens/home_page.dart';
 import 'package:doable_todo_list_app/screens/settings_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-//Colors
-Color blackColor = const Color(0xff0c120c);
-Color blueColor = const Color(0xff4285F4);
-Color whiteColor = const Color(0xffFDFDFF);
-Color iconColor = const Color(0xff565656);
-Color outlineColor = const Color(0xffD6D6D6);
-Color descriptionColor = const Color(0xff565656);
+const Color _seedColor = Color(0xFF3B82F6);
 
-// TODO: ADD A .env file
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter is ready
+  WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Awesome Notifications
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
   await AwesomeNotifications().initialize(
-    null, // Use default icon
+    null,
     [
       NotificationChannel(
         channelKey: 'task_reminders',
         channelName: 'Task Reminders',
         channelDescription: 'Notifications for task reminders',
-        defaultColor: blueColor,
-        ledColor: blueColor,
+        defaultColor: _seedColor,
+        ledColor: _seedColor,
         importance: NotificationImportance.High,
         channelShowBadge: true,
         playSound: true,
@@ -38,31 +37,19 @@ Future<void> main() async {
     ],
   );
 
-  // Request notification permissions
-  final hasPermission = await NotificationService.requestPermissions();
-  if (!hasPermission) {
-    print('Notification permission denied');
-  } else {
-    print('Notification permission granted');
-  }
+  await NotificationService.requestPermissions();
 
-  // Reschedule pending notifications
   try {
     final tasks = await TaskRepository().fetchAll();
-    print('Rescheduling ${tasks.length} tasks');
     await NotificationService.rescheduleAllNotifications(tasks);
-    print('Notifications rescheduled successfully');
-  } catch (e) {
-    print('Error rescheduling notifications: $e');
-  }
+  } catch (_) {}
 
-  //status bar & navigation bar colors and themes
-  SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: whiteColor,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: whiteColor,
-      systemNavigationBarIconBrightness: Brightness.dark,
-      systemNavigationBarDividerColor: whiteColor));
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
 
   runApp(const DoableApp());
 }
@@ -80,8 +67,6 @@ class _DoableAppState extends State<DoableApp> {
   @override
   void initState() {
     super.initState();
-
-    // Set up notification listeners
     AwesomeNotifications().setListeners(
       onActionReceivedMethod: onActionReceivedMethod,
       onNotificationCreatedMethod: onNotificationCreatedMethod,
@@ -92,106 +77,166 @@ class _DoableAppState extends State<DoableApp> {
 
   @pragma("vm:entry-point")
   static Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
-    // Handle notification tap
     if (receivedAction.payload?['task_id'] != null) {
-      // Navigate to home page to show the task
-      DoableApp.navigatorKey.currentState?.pushNamedAndRemoveUntil(
-        'home',
-        (route) => false,
-      );
+      DoableApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('home', (route) => false);
     }
   }
 
   @pragma("vm:entry-point")
-  static Future<void> onNotificationCreatedMethod(ReceivedNotification receivedNotification) async {
-    // Handle notification created
-  }
+  static Future<void> onNotificationCreatedMethod(ReceivedNotification receivedNotification) async {}
 
   @pragma("vm:entry-point")
-  static Future<void> onNotificationDisplayedMethod(ReceivedNotification receivedNotification) async {
-    // Handle notification displayed
-  }
+  static Future<void> onNotificationDisplayedMethod(ReceivedNotification receivedNotification) async {}
 
   @pragma("vm:entry-point")
-  static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {
-    // Handle notification dismissed
-  }
+  static Future<void> onDismissActionReceivedMethod(ReceivedAction receivedAction) async {}
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      navigatorKey: DoableApp.navigatorKey,
-      home: const HomePage(),
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-          //colors
-          splashColor: Colors.transparent,
-          focusColor: Colors.transparent,
-          hoverColor: Colors.transparent,
-          //font family
-          fontFamily: "Inter",
-          textTheme: const TextTheme(
-            //Main heading font style - "Create to-do, Modify to-do"
-            displayLarge: TextStyle(
-                fontSize: 28.0,
-                fontWeight: FontWeight.w900,
-                color: Color(0xff0c120c)),
-            //Subheading font style - "Today, Settings"
-            displayMedium: TextStyle(
-                fontSize: 20.0,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff0c120c)),
-            //Regular app font style - "Set Reminder, Daily, Save, License, ..."
-            displaySmall: TextStyle(
-                fontSize: 15.0,
-                fontWeight: FontWeight.w500,
-                color: Color(0xff0c120c)),
-            //box heading font style - "Tell us about your task, Date & Time, Completion status, ..."
-            labelSmall: TextStyle(
-                fontSize: 13.0,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff565656)),
-            //Task list heading font style - "Return Library Book"
-            bodyLarge: TextStyle(
-                fontSize: 16.0,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff0c120c)),
-            //Task list description font style - "Gather overdue library books and return..."
-            bodyMedium: TextStyle(
-                fontSize: 14.0,
-                fontWeight: FontWeight.w600,
-                color: Color(0xff565656)),
-            //Task list icon text font style - "11:30 AM, 26/11/24"
-            bodySmall: TextStyle(
-                fontSize: 12.0,
-                fontWeight: FontWeight.normal,
-                color: Color(0xff565656)),
-          )),
+    final lightTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _seedColor,
+        brightness: Brightness.light,
+      ),
+      scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Colors.white,
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFE5E7EB)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFF3F4F6),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: const BorderSide(color: _seedColor, width: 2),
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        elevation: 2,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFFE5E7EB),
+        thickness: 1,
+      ),
+      iconTheme: const IconThemeData(color: Color(0xFF374151)),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: Color(0xFF111827)),
+        bodyMedium: TextStyle(color: Color(0xFF374151)),
+        bodySmall: TextStyle(color: Color(0xFF6B7280)),
+        titleLarge: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w800),
+        titleMedium: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(color: Color(0xFF374151), fontWeight: FontWeight.w600),
+        labelLarge: TextStyle(color: Color(0xFF111827), fontWeight: FontWeight.w600),
+        labelMedium: TextStyle(color: Color(0xFF374151)),
+        labelSmall: TextStyle(color: Color(0xFF6B7280)),
+      ),
+    );
 
-      //routes
-      initialRoute: 'home',
-      routes: {
-        'home': (context) => const HomePage(),
-        'add_task': (context) => const AddTaskPage(),
-        'edit_task': (context) => const EditTaskPage(),
-        'settings': (context) => const SettingsPage(),
-      },
+    final darkTheme = ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: _seedColor,
+        brightness: Brightness.dark,
+      ),
+      scaffoldBackgroundColor: const Color(0xFF0F0F0F),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF1A1A1A),
+        foregroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: Color(0xFF1A1A1A),
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF1A1A1A),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF2D2D2D)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF262626),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: const BorderSide(color: _seedColor, width: 2),
+        ),
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: _seedColor,
+        foregroundColor: Colors.white,
+        elevation: 2,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: Color(0xFF2D2D2D),
+        thickness: 1,
+      ),
+      iconTheme: const IconThemeData(color: Color(0xFFD1D5DB)),
+      textTheme: const TextTheme(
+        bodyLarge: TextStyle(color: Color(0xFFF9FAFB)),
+        bodyMedium: TextStyle(color: Color(0xFFD1D5DB)),
+        bodySmall: TextStyle(color: Color(0xFF9CA3AF)),
+        titleLarge: TextStyle(color: Color(0xFFF9FAFB), fontWeight: FontWeight.w800),
+        titleMedium: TextStyle(color: Color(0xFFF9FAFB), fontWeight: FontWeight.w600),
+        titleSmall: TextStyle(color: Color(0xFFD1D5DB), fontWeight: FontWeight.w600),
+        labelLarge: TextStyle(color: Color(0xFFF9FAFB), fontWeight: FontWeight.w600),
+        labelMedium: TextStyle(color: Color(0xFFD1D5DB)),
+        labelSmall: TextStyle(color: Color(0xFF9CA3AF)),
+      ),
+    );
+
+    return AdaptiveTheme(
+      light: lightTheme,
+      dark: darkTheme,
+      initial: AdaptiveThemeMode.system,
+      builder: (theme, darkTheme) => MaterialApp(
+        navigatorKey: DoableApp.navigatorKey,
+        title: 'Doable',
+        debugShowCheckedModeBanner: false,
+        theme: theme,
+        darkTheme: darkTheme,
+        initialRoute: 'home',
+        routes: {
+          'home': (context) => const HomePage(),
+          'add_task': (context) => const AddTaskPage(),
+          'edit_task': (context) => const EditTaskPage(),
+          'settings': (context) => const SettingsPage(),
+          'chat': (context) => const ChatPage(),
+          'ai_settings': (context) => const AISettingsPage(),
+        },
+      ),
     );
   }
 }
-
-double verticalPadding(BuildContext context) {
-  return MediaQuery.of(context).size.height / 20;
-}
-
-double horizontalPadding(BuildContext context) {
-  return MediaQuery.of(context).size.width / 20;
-}
-
-EdgeInsets textFieldPadding(BuildContext context) {
-  // TODO: Convert 25px into respected MediaQuery size
-  return EdgeInsets.symmetric(
-      horizontal: MediaQuery.of(context).size.width * 0.1,
-      vertical: MediaQuery.of(context).size.height * 0.025);
-}
-

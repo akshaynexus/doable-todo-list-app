@@ -146,15 +146,18 @@ class _HomePageState extends State<HomePage> {
 
   // ---- Filter bottom sheet ----
   Future<void> _openFilterSheet() async {
-    await showModalBottomSheet<void>( // [web:146][web:148]
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return StatefulBuilder( // local state inside sheet [web:145][web:154][web:158]
+        return StatefulBuilder(
           builder: (context, setSheetState) {
             Future<void> pickDate() async {
               final now = DateTime.now();
@@ -178,11 +181,11 @@ class _HomePageState extends State<HomePage> {
             }
 
             Widget chip(String label, bool selected, VoidCallback onTap) {
-              final bg = selected ? Colors.black : Colors.white;
-              final fg = selected ? Colors.white : Colors.black;
+              final bg = selected ? (isDark ? theme.colorScheme.primary : Colors.black) : (isDark ? const Color(0xFF262626) : Colors.white);
+              final fg = selected ? Colors.white : (isDark ? Colors.white : Colors.black);
               return Material(
                 color: bg,
-                shape: StadiumBorder(side: BorderSide(color: Colors.grey.shade300)),
+                shape: StadiumBorder(side: BorderSide(color: isDark ? const Color(0xFF404040) : Colors.grey.shade300)),
                 child: InkWell(
                   onTap: onTap,
                   customBorder: const StadiumBorder(),
@@ -211,15 +214,15 @@ class _HomePageState extends State<HomePage> {
                           width: 44,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: Colors.black12,
+                            color: isDark ? Colors.white24 : Colors.black12,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      const Text('Date & Time',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+                      Text('Date & Time',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : Colors.black)),
                       const SizedBox(height: 12),
 
                       _PickerRow(
@@ -237,8 +240,8 @@ class _HomePageState extends State<HomePage> {
                       ),
 
                       const SizedBox(height: 20),
-                      const Text('Completion Status',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+                      Text('Completion Status',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : Colors.black)),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 12,
@@ -254,8 +257,8 @@ class _HomePageState extends State<HomePage> {
                       ),
 
                       const SizedBox(height: 20),
-                      const Text('Repeat',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+                      Text('Repeat',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : Colors.black)),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 12,
@@ -273,8 +276,8 @@ class _HomePageState extends State<HomePage> {
                       ),
 
                       const SizedBox(height: 20),
-                      const Text('Reminders',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black)),
+                      Text('Reminders',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : Colors.black)),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 12,
@@ -295,7 +298,7 @@ class _HomePageState extends State<HomePage> {
                         height: 56,
                         child: FilledButton(
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF3B82F6),
+                            backgroundColor: theme.colorScheme.primary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -305,8 +308,8 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ),
                           onPressed: () {
-                            Navigator.pop(context); // close sheet
-                            setState(() {}); // apply filters to list
+                            Navigator.pop(context);
+                            setState(() {});
                           },
                           child: const Text('Apply Filter'),
                         ),
@@ -323,7 +326,7 @@ class _HomePageState extends State<HomePage> {
                               _fltReminder = null;
                             });
                           },
-                          child: const Text('Clear selections'),
+                          child: Text('Clear selections', style: TextStyle(color: theme.colorScheme.primary)),
                         ),
                       ),
                     ],
@@ -339,11 +342,14 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF8F9FA),
       body: CustomScrollView(
         slivers: [
-          // Header
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
@@ -355,40 +361,45 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row 1: Logo + Settings
                   Row(
                     children: [
-                      SvgPicture.asset('assets/trans_logo.svg', height: 28),
+                      SvgPicture.asset('assets/trans_logo.svg', height: 28, colorFilter: ColorFilter.mode(isDark ? Colors.white : Colors.black, BlendMode.srcIn)),
                       const Spacer(),
                       IconButton(
                         iconSize: 28,
                         splashRadius: 28,
                         tooltip: 'Settings',
                         onPressed: _openSettings,
-                        icon: const Icon(Icons.menu, color: Colors.black87),
+                        icon: Icon(Icons.menu, color: isDark ? Colors.white : Colors.black87),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-                  // Row 2: Today + Filter
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         'Today',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: isDark ? Colors.white : Colors.black,
                           fontWeight: FontWeight.w800,
                           fontSize: 24,
                           height: 1.3,
                         ),
                       ),
                       const Spacer(),
+                      IconButton(
+                        iconSize: 24,
+                        splashRadius: 24,
+                        tooltip: 'AI Assistant',
+                        onPressed: () => Navigator.pushNamed(context, 'chat'),
+                        icon: Icon(Icons.smart_toy_outlined, color: isDark ? Colors.white70 : Colors.black87),
+                      ),
                       ConstrainedBox(
                         constraints: const BoxConstraints(minWidth: 96, minHeight: 48),
                         child: _FilterChipButton(
                           label: 'Filter',
-                          onTap: _openFilterSheet, // open bottom sheet
+                          onTap: _openFilterSheet,
                           height: 36,
                         ),
                       ),
@@ -399,7 +410,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // Task list (uses filtered tasks)
           SliverList.separated(
             itemBuilder: (context, index) {
               final task = _filteredTasks[index];
@@ -411,8 +421,8 @@ class _HomePageState extends State<HomePage> {
                 secondaryBackground: Container(
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  color: Colors.red.shade50,
-                  child: Icon(Icons.delete, color: Colors.red.shade400),
+                  color: isDark ? Colors.red.shade900 : Colors.red.shade50,
+                  child: Icon(Icons.delete, color: isDark ? Colors.red.shade300 : Colors.red.shade400),
                 ),
                 confirmDismiss: (_) async => task.completed,
                 onDismissed: (_) => _delete(task),
@@ -429,13 +439,13 @@ class _HomePageState extends State<HomePage> {
                 ),
               );
             },
-            separatorBuilder: (_, __) => const Padding(
-              padding: EdgeInsets.only(left: 72, right: 16),
+            separatorBuilder: (_, __) => Padding(
+              padding: const EdgeInsets.only(left: 72, right: 16),
               child: Column(
                 children: [
-                  SizedBox(height: 8),
-                  Divider(height: 1),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
+                  Divider(height: 1, color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB)),
+                  const SizedBox(height: 8),
                 ],
               ),
             ),
@@ -449,10 +459,10 @@ class _HomePageState extends State<HomePage> {
           final saved = await Navigator.pushNamed(context, 'add_task');
           if (saved == true) await _load();
         },
-        backgroundColor: Colors.black,
+        backgroundColor: isDark ? colorScheme.primary : Colors.black,
         shape: const CircleBorder(),
         elevation: 3,
-        child: const Icon(Icons.add, color: Colors.white, size: 28),
+        child: Icon(Icons.add, color: isDark ? Colors.white : Colors.white, size: 28),
       ),
     );
   }
@@ -473,11 +483,14 @@ class _FilterChipButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
       child: Material(
-        color: Colors.white,
-        shape: StadiumBorder(side: BorderSide(color: Colors.grey.shade300)),
+        color: isDark ? const Color(0xFF262626) : Colors.white,
+        shape: StadiumBorder(side: BorderSide(color: isDark ? const Color(0xFF404040) : Colors.grey.shade300)),
         child: InkWell(
           customBorder: const StadiumBorder(),
           onTap: onTap,
@@ -490,11 +503,11 @@ class _FilterChipButton extends StatelessWidget {
                 children: [
                   Text(
                     label,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       height: 1.3,
-                      color: Colors.black87,
+                      color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -503,7 +516,7 @@ class _FilterChipButton extends StatelessWidget {
                     height: 18,
                     width: 18,
                     colorFilter:
-                    const ColorFilter.mode(Colors.black87, BlendMode.srcIn),
+                    ColorFilter.mode(isDark ? Colors.white : Colors.black87, BlendMode.srcIn),
                   ),
                 ],
               ),
@@ -526,6 +539,8 @@ class _TaskTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isDone = task.completed;
 
     final titleStyle = TextStyle(
@@ -533,7 +548,7 @@ class _TaskTile extends StatelessWidget {
       height: 1.5,
       fontWeight: FontWeight.w800,
       decoration: isDone ? TextDecoration.lineThrough : TextDecoration.none,
-      color: isDone ? Colors.blueGrey : Colors.black,
+      color: isDone ? (isDark ? Colors.grey.shade500 : Colors.blueGrey) : (isDark ? Colors.white : Colors.black),
     );
 
     return Padding(
@@ -567,10 +582,13 @@ class _IncompleteContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     final metaStyle = TextStyle(
       fontSize: 12,
       height: 1.33,
-      color: Colors.blueGrey.shade600,
+      color: isDark ? Colors.grey.shade400 : Colors.blueGrey.shade600,
       fontWeight: FontWeight.w600,
     );
 
@@ -605,7 +623,7 @@ class _IncompleteContent extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: Colors.blueGrey.shade700,
+                color: isDark ? Colors.grey.shade400 : Colors.blueGrey.shade700,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

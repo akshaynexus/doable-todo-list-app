@@ -1,3 +1,4 @@
+import 'package:adaptive_theme/adaptive_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -6,8 +7,6 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 
 import 'package:doable_todo_list_app/services/notification_service.dart';
 import 'package:doable_todo_list_app/repositories/task_repository.dart';
-
-import '../main.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -165,24 +164,29 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
     final version = '1.0.0';
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         elevation: 0,
-        surfaceTintColor: Colors.white,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           tooltip: 'Back',
         ),
-        title: const Text(
+        title: Text(
           'Settings',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
           ),
         ),
         centerTitle: false,
@@ -193,29 +197,68 @@ class _SettingsPageState extends State<SettingsPage> {
             : ListView(
           padding: _screenHPad.add(const EdgeInsets.only(bottom: 24, top: 8)),
           children: [
-            // Notifications toggle
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
                   'Notifications',
-                  style: TextStyle(fontSize: 16, color: blackColor, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600),
                 ),
                 Switch(
                   value: _notificationsEnabled,
                   onChanged: _setNotifications,
-                  activeThumbColor: blueColor,
+                  activeThumbColor: colorScheme.primary,
                 ),
               ],
             ),
             const SizedBox(height: 16),
 
-            // Clear All Data pill button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Dark Mode',
+                  style: TextStyle(fontSize: 16, color: isDark ? Colors.white : Colors.black, fontWeight: FontWeight.w600),
+                ),
+                ValueListenableBuilder<AdaptiveThemeMode>(
+                  valueListenable: AdaptiveTheme.of(context).modeChangeNotifier,
+                  builder: (_, mode, __) {
+                    return SegmentedButton<AdaptiveThemeMode>(
+                      segments: [
+                        ButtonSegment(
+                          value: AdaptiveThemeMode.light,
+                          icon: Icon(Icons.light_mode, size: 18, color: isDark ? Colors.white : Colors.black),
+                        ),
+                        ButtonSegment(
+                          value: AdaptiveThemeMode.system,
+                          icon: Icon(Icons.brightness_auto, size: 18, color: isDark ? Colors.white : Colors.black),
+                        ),
+                        ButtonSegment(
+                          value: AdaptiveThemeMode.dark,
+                          icon: Icon(Icons.dark_mode, size: 18, color: isDark ? Colors.white : Colors.black),
+                        ),
+                      ],
+                      selected: {mode},
+                      onSelectionChanged: (selection) {
+                        AdaptiveTheme.of(context).setThemeMode(selection.first);
+                      },
+                      showSelectedIcon: false,
+                      style: ButtonStyle(
+                        visualDensity: VisualDensity.compact,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
             SizedBox(
               height: 48,
               child: FilledButton(
                 style: FilledButton.styleFrom(
-                  backgroundColor: blackColor,
+                  backgroundColor: isDark ? colorScheme.primary : Colors.black,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
@@ -230,19 +273,18 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             const SizedBox(height: 24),
-            const Divider(height: 1),
+            Divider(height: 1, color: isDark ? const Color(0xFF2D2D2D) : const Color(0xFFE5E7EB)),
 
-            // About section
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: Text(
                     'License',
-                    style: TextStyle(fontSize: 14, color: descriptionColor, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w600),
                   ),
                 ),
-                Text('MIT', style: TextStyle(fontSize: 14, color: descriptionColor, fontWeight: FontWeight.w700)),
+                Text('MIT', style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w700)),
               ],
             ),
             const SizedBox(height: 12),
@@ -251,29 +293,26 @@ class _SettingsPageState extends State<SettingsPage> {
                 Expanded(
                   child: Text(
                     'Version',
-                    style: TextStyle(fontSize: 14, color: descriptionColor, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w600),
                   ),
                 ),
-                Text(version, style: TextStyle(fontSize: 14, color: descriptionColor, fontWeight: FontWeight.w700)),
+                Text(version, style: TextStyle(fontSize: 14, color: isDark ? Colors.grey.shade400 : Colors.grey.shade600, fontWeight: FontWeight.w700)),
               ],
             ),
 
-            // Spacer
             SizedBox(height: MediaQuery.of(context).size.height * 0.12),
 
-            // Centered logo + version
             Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SvgPicture.asset('assets/trans_logo.svg', height: 56),
+                SvgPicture.asset('assets/trans_logo.svg', height: 56, colorFilter: ColorFilter.mode(isDark ? Colors.white : Colors.black, BlendMode.srcIn)),
                 const SizedBox(height: 8),
                 Text(
                   'Version $version',
-                  style: TextStyle(fontSize: 12, color: descriptionColor, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade500 : Colors.grey.shade600, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 32),
 
-                // Social buttons row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -318,6 +357,8 @@ class _SocialIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return InkResponse(
       onTap: onTap,
       radius: 28,
@@ -327,7 +368,7 @@ class _SocialIconButton extends StatelessWidget {
         height: 50,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.black.withOpacity(0.04),
+          color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.04),
         ),
         alignment: Alignment.center,
         child: Tooltip(
@@ -336,7 +377,7 @@ class _SocialIconButton extends StatelessWidget {
             asset,
             height: 32,
             width: 32,
-            //colorFilter: const ColorFilter.mode(Colors.black, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(isDark ? Colors.white : Colors.black, BlendMode.srcIn),
           ),
         ),
       ),

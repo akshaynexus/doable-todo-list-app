@@ -228,7 +228,9 @@ class _EditTaskPageState extends State<EditTaskPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Simple guard for initial frame before arguments arrive
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     if (!(_titleCtrl.text.isNotEmpty || ModalRoute.of(context)?.settings.arguments != null)) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -237,22 +239,23 @@ class _EditTaskPageState extends State<EditTaskPage> {
     final bigSpacing = 24.0;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDark ? const Color(0xFF0F0F0F) : const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         elevation: 0,
-        surfaceTintColor: Colors.white,
+        scrolledUnderElevation: 0,
+        surfaceTintColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
         leading: IconButton(
           onPressed: () => Navigator.pop(context, false),
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           tooltip: 'Back',
         ),
-        title: const Text(
+        title: Text(
           'Modify to-do',
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
-            color: Colors.black,
+            color: isDark ? Colors.white : Colors.black,
           ),
         ),
         centerTitle: false,
@@ -263,14 +266,13 @@ class _EditTaskPageState extends State<EditTaskPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Reminder button: blue bg + white icon/text when enabled
               _ReminderButton(
                 enabled: _reminder,
                 onTap: _toggleReminder,
               ),
               SizedBox(height: bigSpacing),
 
-              const _FieldLabel(text: 'Tell us about your task'),
+              _FieldLabel(text: 'Tell us about your task'),
               SizedBox(height: spacing),
 
               _InputField(
@@ -286,10 +288,9 @@ class _EditTaskPageState extends State<EditTaskPage> {
               ),
               SizedBox(height: bigSpacing),
 
-              const _FieldLabel(text: 'Repeat'),
+              _FieldLabel(text: 'Repeat'),
               SizedBox(height: spacing),
 
-              // Frequency chips
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -318,7 +319,6 @@ class _EditTaskPageState extends State<EditTaskPage> {
               ),
               const SizedBox(height: 12),
 
-              // Weekday chips (always visible; applied when Weekly)
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
@@ -362,10 +362,9 @@ class _EditTaskPageState extends State<EditTaskPage> {
               ),
               SizedBox(height: bigSpacing),
 
-              const _FieldLabel(text: 'Date & Time'),
+              _FieldLabel(text: 'Date & Time'),
               SizedBox(height: spacing),
 
-              // Date field with calendar icon
               _PickerField(
                 hint: 'Set date',
                 valueText: _selectedDate != null ? _formatDate(_selectedDate!) : null,
@@ -377,7 +376,6 @@ class _EditTaskPageState extends State<EditTaskPage> {
               ),
               SizedBox(height: spacing),
 
-              // Time field with clock icon
               _PickerField(
                 hint: 'Set time',
                 valueText: _selectedTime != null ? _formatTime(_selectedTime!) : null,
@@ -393,7 +391,6 @@ class _EditTaskPageState extends State<EditTaskPage> {
         ),
       ),
 
-      // Bottom Save button with extra bottom padding (and safe area)
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
         child: SafeArea(
@@ -402,7 +399,7 @@ class _EditTaskPageState extends State<EditTaskPage> {
             height: 56,
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFF3B82F6),
+                backgroundColor: theme.colorScheme.primary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -426,12 +423,15 @@ class _EditTaskPageState extends State<EditTaskPage> {
 class _FieldLabel extends StatelessWidget {
   const _FieldLabel({required this.text});
   final String text;
+  
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Text(
       text,
-      style: const TextStyle(
-        color: Colors.black87,
+      style: TextStyle(
+        color: isDark ? Colors.white : Colors.black87,
         fontWeight: FontWeight.w700,
         fontSize: 14,
       ),
@@ -454,29 +454,32 @@ class _InputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return TextField(
       controller: controller,
       textInputAction: textInputAction,
       maxLines: maxLines,
+      style: TextStyle(color: isDark ? Colors.white : Colors.black),
       decoration: InputDecoration(
         hintText: hint,
+        hintStyle: TextStyle(color: isDark ? Colors.grey.shade500 : Colors.black45),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         filled: true,
-        fillColor: Colors.white,
+        fillColor: isDark ? const Color(0xFF262626) : Colors.white,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? const Color(0xFF404040) : Colors.grey.shade300),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(color: isDark ? const Color(0xFF404040) : Colors.grey.shade300),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
         ),
       ),
-      style: const TextStyle(fontSize: 14, height: 1.4),
     );
   }
 }
@@ -488,15 +491,16 @@ class _ReminderButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = enabled ? _EditTaskPageState.blueColor : Colors.white;
-    final fg = enabled ? Colors.white : Colors.black;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = enabled ? const Color(0xFF3B82F6) : (isDark ? const Color(0xFF262626) : Colors.white);
+    final fg = enabled ? Colors.white : (isDark ? Colors.white : Colors.black);
 
     return Align(
       alignment: Alignment.centerLeft,
       child: Material(
         color: bg,
         shape: StadiumBorder(
-          side: BorderSide(color: Colors.grey.shade300),
+          side: BorderSide(color: isDark ? const Color(0xFF404040) : Colors.grey.shade300),
         ),
         child: InkWell(
           onTap: onTap,
@@ -520,7 +524,7 @@ class _ReminderButton extends StatelessWidget {
                   width: 18,
                   colorFilter: enabled
                       ? null
-                      : const ColorFilter.mode(Colors.black87, BlendMode.srcIn),
+                      : ColorFilter.mode(isDark ? Colors.white : Colors.black87, BlendMode.srcIn),
                 ),
               ],
             ),
@@ -544,12 +548,13 @@ class _RepeatChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? Colors.black : Colors.white;
-    final fg = selected ? Colors.white : Colors.black;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = selected ? (isDark ? const Color(0xFF3B82F6) : Colors.black) : (isDark ? const Color(0xFF262626) : Colors.white);
+    final fg = selected ? Colors.white : (isDark ? Colors.white : Colors.black);
 
     return Material(
       color: bg,
-      shape: StadiumBorder(side: BorderSide(color: Colors.grey.shade300)),
+      shape: StadiumBorder(side: BorderSide(color: isDark ? const Color(0xFF404040) : Colors.grey.shade300)),
       child: InkWell(
         onTap: onTap,
         customBorder: const StadiumBorder(),
@@ -581,12 +586,13 @@ class _WeekdayChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = selected ? Colors.black : Colors.white;
-    final fg = selected ? Colors.white : Colors.black;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = selected ? (isDark ? const Color(0xFF3B82F6) : Colors.black) : (isDark ? const Color(0xFF262626) : Colors.white);
+    final fg = selected ? Colors.white : (isDark ? Colors.white : Colors.black);
 
     return Material(
       color: bg,
-      shape: StadiumBorder(side: BorderSide(color: Colors.grey.shade300)),
+      shape: StadiumBorder(side: BorderSide(color: isDark ? const Color(0xFF404040) : Colors.grey.shade300)),
       child: InkWell(
         onTap: onTap,
         customBorder: const StadiumBorder(),
@@ -622,13 +628,14 @@ class _PickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasValue = valueText != null && valueText!.isNotEmpty;
 
     return Material(
-      color: Colors.white,
+      color: isDark ? const Color(0xFF262626) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade300),
+        side: BorderSide(color: isDark ? const Color(0xFF404040) : Colors.grey.shade300),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -642,14 +649,14 @@ class _PickerField extends StatelessWidget {
                 height: 18,
                 width: 18,
                 colorFilter:
-                const ColorFilter.mode(Colors.black87, BlendMode.srcIn),
+                ColorFilter.mode(isDark ? Colors.white : Colors.black87, BlendMode.srcIn),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   hasValue ? valueText! : hint,
                   style: TextStyle(
-                    color: hasValue ? Colors.black : Colors.black54,
+                    color: hasValue ? (isDark ? Colors.white : Colors.black) : (isDark ? Colors.grey.shade500 : Colors.black54),
                     fontWeight: hasValue ? FontWeight.w600 : FontWeight.w500,
                     fontSize: 14,
                   ),
@@ -658,7 +665,7 @@ class _PickerField extends StatelessWidget {
               if (hasValue && onClear != null)
                 IconButton(
                   tooltip: 'Clear',
-                  icon: const Icon(Icons.close, size: 20, color: Colors.black54),
+                  icon: Icon(Icons.close, size: 20, color: isDark ? Colors.grey.shade500 : Colors.black54),
                   onPressed: onClear,
                 ),
             ],
