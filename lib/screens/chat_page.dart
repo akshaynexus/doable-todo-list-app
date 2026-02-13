@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/chat_message.dart';
 import '../services/openrouter_client.dart';
@@ -70,6 +71,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
     final text = _inputController.text.trim();
     if (text.isEmpty || _isLoading) return;
 
+    HapticFeedback.lightImpact();
     _inputController.clear();
     _focusNode.unfocus();
 
@@ -163,6 +165,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
                 if (lastIdx >= 0) {
                   final result = event.toolResult;
                   final success = result?['success'] == true;
+                  HapticFeedback.selectionClick();
                   final toolName = event.toolName?.toLowerCase() ?? '';
                   if (success && (toolName == 'add_task' || toolName == 'update_task' || toolName == 'delete_task' || toolName == 'toggle_task' || toolName == 'clear_all_tasks')) {
                     _tasksModified = true;
@@ -177,6 +180,7 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
               break;
 
             case ChatStreamEventType.done:
+              HapticFeedback.mediumImpact();
               final current = _messages[idx];
               final content = current.content;
               final hasToolCalls = current.toolCalls != null && current.toolCalls!.isNotEmpty;
@@ -274,7 +278,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
           ),
           IconButton(
             icon: Icon(Icons.refresh, color: isDark ? Colors.white54 : Colors.black54),
-            onPressed: _clearChat,
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              _clearChat();
+            },
             tooltip: 'Clear chat',
           ),
         ],
@@ -444,7 +451,10 @@ class _ChatPageState extends State<ChatPage> with WidgetsBindingObserver {
             borderRadius: BorderRadius.circular(24),
             child: InkWell(
               borderRadius: BorderRadius.circular(24),
-              onTap: _isLoading ? null : _sendMessage,
+              onTap: _isLoading ? null : () {
+                HapticFeedback.lightImpact();
+                _sendMessage();
+              },
               child: Container(
                 width: 48,
                 height: 48,
