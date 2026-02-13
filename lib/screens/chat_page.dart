@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import '../models/chat_message.dart';
 import '../services/openrouter_client.dart';
 
@@ -542,6 +543,9 @@ class _MessageBubble extends StatelessWidget {
                   )),
                 if (message.content.isNotEmpty)
                   Container(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.7,
+                    ),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
                       color: isUser ? const Color(0xFF3B82F6) : (isDark ? const Color(0xFF1A1A1A) : Colors.white),
@@ -554,14 +558,55 @@ class _MessageBubble extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: SelectableText(
-                      message.content,
-                      style: TextStyle(
-                        color: isUser ? Colors.white : (isDark ? Colors.white : Colors.black87),
-                        fontSize: 15,
-                        height: 1.4,
-                      ),
-                    ),
+                    child: isUser
+                        ? SelectableText(
+                            message.content,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              height: 1.4,
+                            ),
+                          )
+                        : MarkdownBody(
+                            data: message.content,
+                            selectable: true,
+                            styleSheet: MarkdownStyleSheet(
+                              p: TextStyle(
+                                color: isDark ? Colors.white : Colors.black87,
+                                fontSize: 15,
+                                height: 1.4,
+                              ),
+                              h1: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 20, fontWeight: FontWeight.bold),
+                              h2: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 18, fontWeight: FontWeight.bold),
+                              h3: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16, fontWeight: FontWeight.bold),
+                              code: TextStyle(
+                                backgroundColor: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                                color: isDark ? Colors.green.shade300 : Colors.green.shade700,
+                                fontFamily: 'monospace',
+                                fontSize: 13,
+                              ),
+                              codeblockDecoration: BoxDecoration(
+                                color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              blockquote: TextStyle(
+                                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                                fontStyle: FontStyle.italic,
+                              ),
+                              blockquoteDecoration: BoxDecoration(
+                                border: Border(
+                                  left: BorderSide(
+                                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                                    width: 3,
+                                  ),
+                                ),
+                              ),
+                              listBullet: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                              strong: TextStyle(fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+                              em: TextStyle(fontStyle: FontStyle.italic, color: isDark ? Colors.white : Colors.black87),
+                              a: TextStyle(color: Colors.blue),
+                            ),
+                          ),
                   ),
                 if (message.isStreaming &&
                     message.content.isEmpty &&
@@ -673,24 +718,37 @@ class _StreamingDots extends StatefulWidget {
   State<_StreamingDots> createState() => _StreamingDotsState();
 }
 
-class _StreamingDotsState extends State<_StreamingDots> {
-  int _dotCount = 0;
+class _StreamingDotsState extends State<_StreamingDots> with TickerProviderStateMixin {
+  late List<AnimationController> _controllers;
+  late List<Animation<double>> _animations;
 
   @override
   void initState() {
     super.initState();
-    _animate();
+    _controllers = List.generate(3, (i) => AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    ));
+    
+    _animations = _controllers.map((controller) => Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(parent: controller, curve: Curves.easeInOut),
+    )).toList();
+
+    for (var i = 0; i < _controllers.length; i++) {
+      Future.delayed(Duration(milliseconds: i * 150), () {
+        if (mounted) {
+          _controllers[i].repeat(reverse: true);
+        }
+      });
+    }
   }
 
-  void _animate() {
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) {
-        setState(() {
-          _dotCount = (_dotCount + 1) % 4;
-        });
-        _animate();
-      }
-    });
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   @override
@@ -700,14 +758,19 @@ class _StreamingDotsState extends State<_StreamingDots> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: List.generate(3, (i) {
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(
-            color: i < _dotCount ? (isDark ? Colors.white54 : Colors.black54) : (isDark ? Colors.white24 : Colors.black26),
-            shape: BoxShape.circle,
-          ),
+        return AnimatedBuilder(
+          animation: _animations[i],
+          builder: (context, child) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: (isDark ? Colors.white : Colors.black).withValues(alpha: 0.3 + (_animations[i].value * 0.7)),
+                shape: BoxShape.circle,
+              ),
+            );
+          },
         );
       }),
     );
